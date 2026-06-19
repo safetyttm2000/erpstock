@@ -1,0 +1,246 @@
+/* style.css ---------------------------------------------------------
+   ERP Stock System - visual identity
+
+   Signature element: equipment status is shown as an "inspection tag" --
+   a small rectangular tag with a punched hole on the left edge, the same
+   shape used on real fire-extinguisher / rescue-gear inspection tags.
+   Everything else stays plain, calm Bootstrap so the tag reads as the one
+   deliberate flourish rather than noise.
+---------------------------------------------------------------------- */
+
+:root {
+  --navy: #1B2430;
+  --navy-soft: #232E3D;
+  --signal-red: #E63946;
+  --safety-amber: #F4A300;
+  --teal: #2A9D8F;
+  --bg: #F6F6F4;
+  --text: #1B2430;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, .brand-title { font-family: 'Sarabun', sans-serif; font-weight: 700; }
+
+a { text-decoration: none; }
+
+/* ---------------- Login screen ---------------- */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--navy) 0%, #2C3A4E 45%, var(--navy-soft) 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+  padding: 20px;
+}
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.login-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  text-align: center;
+}
+.login-card img.logo { height: 64px; margin-bottom: 14px; }
+.login-lang-toggle { position: absolute; top: 18px; right: 18px; }
+
+.btn-signal {
+  background: var(--signal-red);
+  border-color: var(--signal-red);
+  color: #fff;
+  font-weight: 600;
+  transition: transform .15s ease, box-shadow .15s ease, background .2s ease;
+}
+.btn-signal:hover {
+  background: #cc2c39;
+  border-color: #cc2c39;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(230,57,70,.35);
+  color: #fff;
+}
+
+/* ---------------- App shell ---------------- */
+#appShell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: var(--navy);
+  color: #C7CDD6;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 1040;
+  transition: transform .25s ease;
+}
+.sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sidebar .brand img { height: 34px; }
+.sidebar .brand-title { color: #fff; font-size: 1.05rem; }
+
+.sidebar .nav-link {
+  color: #C7CDD6;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: .95rem;
+  border-left: 3px solid transparent;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.sidebar .nav-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+.sidebar .nav-link.active { background: rgba(230,57,70,.15); color: #fff; border-left-color: var(--signal-red); }
+.sidebar .nav-link i { width: 20px; text-align: center; }
+.sidebar .nav-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: .85rem; }
+
+.main-area { flex: 1; margin-left: 250px; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 1020;
+}
+.page-content { padding: 24px; flex: 1; }
+.sidebar-toggle { display: none; }
+
+@media (max-width: 991.98px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.show { transform: translateX(0); box-shadow: 8px 0 30px rgba(0,0,0,.25); }
+  .main-area { margin-left: 0; }
+  .sidebar-toggle { display: inline-flex; }
+  .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1030; display: none; }
+  .sidebar-backdrop.show { display: block; }
+}
+
+/* ---------------- Dashboard cards ---------------- */
+.stat-card {
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  height: 100%;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(27,36,48,.1); }
+.stat-card .stat-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; margin-bottom: 10px;
+}
+.stat-card .stat-value { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+.stat-card .stat-label { color: var(--text-muted); font-size: .85rem; }
+
+.icon-navy { background: rgba(27,36,48,.1); color: var(--navy); }
+.icon-red { background: rgba(230,57,70,.12); color: var(--signal-red); }
+.icon-amber { background: rgba(244,163,0,.15); color: var(--safety-amber); }
+.icon-teal { background: rgba(42,157,143,.15); color: var(--teal); }
+
+/* ---------------- Cards / panels ---------------- */
+.panel {
+  background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+/* ---------------- Inspection-tag status badges ---------------- */
+.tag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px 4px 18px;
+  border-radius: 4px 8px 8px 4px;
+  font-size: .78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #fff;
+}
+.tag::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.85);
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,.15);
+}
+.tag-available { background: var(--teal); }
+.tag-lowstock { background: var(--safety-amber); color: #1B2430; }
+.tag-lowstock::before { background: rgba(27,36,48,.7); }
+.tag-outofstock { background: #9CA3AF; }
+.tag-nearexpiry { background: #E07A1F; }
+.tag-expired { background: var(--signal-red); }
+.tag-borrowed { background: #3B6FB5; }
+.tag-returned { background: var(--teal); }
+.tag-overdue { background: var(--signal-red); }
+
+/* ---------------- Tables ---------------- */
+.table thead th {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--text-muted);
+  border-bottom-width: 1px;
+  white-space: nowrap;
+}
+.table td { vertical-align: middle; }
+.table tbody tr { transition: background .12s ease; }
+.equip-thumb { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+
+.qr-thumb { width: 40px; height: 40px; cursor: pointer; }
+
+.clickable-row { cursor: pointer; }
+
+/* ---------------- Misc ---------------- */
+.btn-icon { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.page-section { display: none; }
+.page-section.active { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.lang-switch .btn { font-weight: 600; }
+.lang-switch .btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.required-mark { color: var(--signal-red); }
+
+#qrPreviewBox { background: #fff; border: 1px dashed var(--border); border-radius: 10px; padding: 16px; display: inline-block; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------------- Print / PDF Report ---------------- */
+@media print {
+  body * { visibility: hidden; }
+  #pdfReportArea, #pdfReportArea * { visibility: visible; }
+  #pdfReportArea {
+    position: absolute; left: 0; top: 0; width: 100%;
+    background: #fff; padding: 24px; font-family: 'Sarabun', sans-serif;
+  }
+  #pdfReportArea table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #pdfReportArea th, #pdfReportArea td { border: 1px solid #ccc; padding: 6px 8px; }
+  #pdfReportArea th { background: #1B2430; color: #fff; }
+}
