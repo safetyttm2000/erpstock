@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERP Stock System</title>
+<link rel="icon" href="https://img2.pic.in.th/ERP-Logo.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="loginScreen">
+  <div class="lang-switch login-lang-toggle btn-group" role="group">
+    <button class="btn btn-sm btn-light" data-lang-btn="th" onclick="applyLanguage('th')">TH</button>
+    <button class="btn btn-sm btn-light" data-lang-btn="en" onclick="applyLanguage('en')">EN</button>
+  </div>
+  <div class="login-card">
+    <img src="https://img2.pic.in.th/ERP-Logo.png" class="logo" alt="ERP Stock System">
+    <h1 class="h4 mb-1" data-i18n="appName">ERP Stock System</h1>
+    <p class="text-muted mb-4" data-i18n="loginTitle">เข้าสู่ระบบ</p>
+    <form id="loginForm" class="text-start" autocomplete="off">
+      <div class="mb-3">
+        <label class="form-label" data-i18n="username">ชื่อผู้ใช้</label>
+        <input type="text" class="form-control" id="loginUsername" required>
+      </div>
+      <div class="mb-2">
+        <label class="form-label" data-i18n="password">รหัสผ่าน</label>
+        <div class="input-group">
+          <input type="password" class="form-control" id="loginPassword" required>
+          <button type="button" class="btn btn-outline-secondary" id="togglePasswordBtn"><i class="bi bi-eye"></i></button>
+        </div>
+      </div>
+      <div id="loginError" class="text-danger small mb-2" style="display:none;"></div>
+      <button type="submit" class="btn btn-signal w-100 mt-3" id="loginSubmitBtn">
+        <span data-i18n="loginBtn">เข้าสู่ระบบ</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appShell" style="display:none;">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">
+      <img src="https://img2.pic.in.th/ERP-Logo.png" alt="logo">
+      <span class="brand-title" data-i18n="appName">ERP Stock System</span>
+    </div>
+    <div class="flex-grow-1 py-2">
+      <a href="#" class="nav-link active" data-page="dashboard"><i class="bi bi-grid-1x2"></i><span data-i18n="nav_dashboard">แดชบอร์ด</span></a>
+      <a href="#" class="nav-link" data-page="equipmentList"><i class="bi bi-clipboard-data"></i><span data-i18n="nav_equipmentList">รายการอุปกรณ์</span></a>
+      <a href="#" class="nav-link" data-page="addEquipment"><i class="bi bi-plus-square"></i><span data-i18n="nav_addEquipment">เพิ่มอุปกรณ์</span></a>
+      <a href="#" class="nav-link" data-page="dispose"><i class="bi bi-trash3"></i><span data-i18n="nav_dispose">จำหน่ายอุปกรณ์</span></a>
+      <a href="#" class="nav-link" data-page="borrow"><i class="bi bi-arrow-left-right"></i><span data-i18n="nav_borrow">เบิกยืม-คืนอุปกรณ์</span></a>
+      <a href="#" class="nav-link" data-page="users" id="navUsers" style="display:none;"><i class="bi bi-people"></i><span data-i18n="nav_users">จัดการผู้ใช้งาน</span></a>
+    </div>
+    <div class="nav-footer">
+      <div class="d-flex justify-content-between align-items-center">
+        <span id="sidebarUserName">-</span>
+        <a href="#" id="logoutBtn" class="text-danger" title="logout"><i class="bi bi-box-arrow-right fs-5"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary sidebar-toggle btn-icon" id="sidebarToggleBtn"><i class="bi bi-list"></i></button>
+        <h5 class="mb-0" id="pageTitle" data-i18n="nav_dashboard">แดชบอร์ด</h5>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <div class="lang-switch btn-group" role="group">
+          <button class="btn btn-sm btn-outline-secondary" data-lang-btn="th" onclick="applyLanguage('th')">TH</button>
+          <button class="btn btn-sm btn-outline-secondary" data-lang-btn="en" onclick="applyLanguage('en')">EN</button>
+        </div>
+        <span class="badge bg-light text-dark border" id="topbarUser">-</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section class="page-section" id="page-dashboard">
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-navy"><i class="bi bi-box-seam"></i></div><div class="stat-value" id="statTotal">0</div><div class="stat-label" data-i18n="dash_totalItems">จำนวนอุปกรณ์ทั้งหมด</div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-teal"><i class="bi bi-check2-circle"></i></div><div class="stat-value" id="statRemaining">0</div><div class="stat-label" data-i18n="dash_remaining">จำนวนคงเหลือทั้งหมด</div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-amber"><i class="bi bi-exclamation-triangle"></i></div><div class="stat-value" id="statLowStock">0</div><div class="stat-label" data-i18n="dash_lowStock">สต็อกต่ำ / หมด</div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-red"><i class="bi bi-calendar-x"></i></div><div class="stat-value" id="statExpired">0</div><div class="stat-label" data-i18n="dash_expired">หมดอายุแล้ว</div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-amber"><i class="bi bi-hourglass-split"></i></div><div class="stat-value" id="statNearExpiry">0</div><div class="stat-label" data-i18n="dash_nearExpiry">ใกล้หมดอายุ</div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-navy"><i class="bi bi-arrow-left-right"></i></div><div class="stat-value" id="statActiveBorrow">0</div><div class="stat-label" data-i18n="dash_activeBorrow">กำลังถูกยืม</div></div></div>
+          <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon icon-red"><i class="bi bi-alarm"></i></div><div class="stat-value" id="statOverdue">0</div><div class="stat-label" data-i18n="dash_overdueBorrow">เกินกำหนดคืน</div></div></div>
+        </div>
+        <div class="panel">
+          <h6 class="mb-3" data-i18n="dash_byType">จำนวนแยกตามประเภท</h6>
+          <div class="row g-3" id="byTypeCards"></div>
+        </div>
+      </section>
+
+      <!-- ===== EQUIPMENT LIST ===== -->
+      <section class="page-section" id="page-equipmentList">
+        <div class="panel">
+          <div class="d-flex flex-wrap gap-2 justify-content-between mb-3">
+            <div class="d-flex flex-wrap gap-2">
+              <select class="form-select" id="filterType" style="width:auto;">
+                <option value="" data-i18n="type_all">ทั้งหมด</option>
+                <option value="Firefighting" data-i18n="type_Firefighting">อุปกรณ์ดับเพลิง</option>
+                <option value="Rescue" data-i18n="type_Rescue">อุปกรณ์ Rescue</option>
+                <option value="Chemical" data-i18n="type_Chemical">อุปกรณ์เก็บกู้สารเคมี</option>
+                <option value="Tools" data-i18n="type_Tools">เครื่องมือ</option>
+                <option value="Other" data-i18n="type_Other">อื่นๆ</option>
+              </select>
+              <input type="text" class="form-control" id="searchEquipment" data-i18n-placeholder="search" placeholder="ค้นหา..." style="width:220px;">
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" style="display:none;">
+              <button class="btn btn-outline-secondary" id="importExcelBtn"><i class="bi bi-upload"></i> <span data-i18n="importExcel">นำเข้า Excel</span></button>
+              <button class="btn btn-outline-secondary" id="exportExcelBtn"><i class="bi bi-file-earmark-spreadsheet"></i> <span data-i18n="exportExcel">ส่งออก Excel</span></button>
+              <button class="btn btn-outline-secondary" id="printPdfBtn"><i class="bi bi-printer"></i> <span data-i18n="printPdf">พิมพ์รายงาน PDF</span></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th data-i18n="col_qr">QR Code</th>
+                  <th data-i18n="col_id">รหัสอุปกรณ์</th>
+                  <th data-i18n="col_name">รายการอุปกรณ์</th>
+                  <th data-i18n="col_qty">จำนวน</th>
+                  <th data-i18n="col_min">จำนวนขั้นต่ำ</th>
+                  <th data-i18n="col_remaining">จำนวนคงเหลือ</th>
+                  <th data-i18n="col_location">สถานที่จัดเก็บ</th>
+                  <th data-i18n="col_expiry">วันหมดอายุ</th>
+                  <th data-i18n="col_status">สถานะ</th>
+                  <th data-i18n="col_actions">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== ADD / EDIT EQUIPMENT ===== -->
+      <section class="page-section" id="page-addEquipment">
+        <div class="panel" style="max-width:760px;">
+          <h6 class="mb-3" id="addEquipmentTitle" data-i18n="addEquipment_title">เพิ่มอุปกรณ์ใหม่</h6>
+          <form id="equipmentForm">
+            <input type="hidden" id="eqRow">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_type">ประเภทอุปกรณ์</label><span class="required-mark">*</span>
+                <select class="form-select" id="eqType" required>
+                  <option value="" data-i18n="selectOption">-- กรุณาเลือก --</option>
+                  <option value="Firefighting" data-i18n="type_Firefighting">อุปกรณ์ดับเพลิง</option>
+                  <option value="Rescue" data-i18n="type_Rescue">อุปกรณ์ Rescue</option>
+                  <option value="Chemical" data-i18n="type_Chemical">อุปกรณ์เก็บกู้สารเคมี</option>
+                  <option value="Tools" data-i18n="type_Tools">เครื่องมือ</option>
+                  <option value="Other" data-i18n="type_Other">อื่นๆ</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_name">ชื่ออุปกรณ์</label><span class="required-mark">*</span>
+                <input type="text" class="form-control" id="eqName" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_quantity">จำนวนอุปกรณ์</label><span class="required-mark">*</span>
+                <input type="number" min="0" class="form-control" id="eqQuantity" required>
+              </div>
+              <div class="col-md-6" id="eqMinQtyWrap">
+                <label class="form-label" data-i18n="field_minQuantity">จำนวนขั้นต่ำ</label>
+                <input type="number" min="0" class="form-control" id="eqMinQuantity">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_location">สถานที่จัดเก็บ</label>
+                <select class="form-select" id="eqLocation">
+                  <option value="" data-i18n="selectOption">-- กรุณาเลือก --</option>
+                  <option value="__other__">+ Other / อื่นๆ</option>
+                </select>
+              </div>
+              <div class="col-md-6" id="eqOtherLocationWrap" style="display:none;">
+                <label class="form-label" data-i18n="field_otherLocation">ระบุสถานที่ (อื่นๆ)</label>
+                <input type="text" class="form-control" id="eqOtherLocation">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_expiryDate">วันหมดอายุ</label>
+                <input type="date" class="form-control" id="eqExpiryDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_calibrateDate">วันที่ต้อง Calibrate</label>
+                <input type="date" class="form-control" id="eqCalibrateDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_image">รูปภาพอุปกรณ์</label>
+                <input type="file" accept="image/*" class="form-control" id="eqImageFile">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_imageUrl">หรือใส่ URL รูปภาพ</label>
+                <input type="text" class="form-control" id="eqImageUrl">
+              </div>
+              <div class="col-12">
+                <img id="eqImagePreview" style="display:none;max-height:120px;border-radius:8px;" class="mb-2">
+              </div>
+              <div class="col-12">
+                <label class="form-label" data-i18n="field_description">รายละเอียดของอุปกรณ์</label>
+                <textarea class="form-control" id="eqDescription" rows="3"></textarea>
+              </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-signal" id="eqSaveBtn"><span data-i18n="save">บันทึก</span></button>
+              <button type="button" class="btn btn-outline-secondary" id="eqCancelEditBtn" style="display:none;"><span data-i18n="cancel">ยกเลิก</span></button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ===== DISPOSE ===== -->
+      <section class="page-section" id="page-dispose">
+        <div class="panel mb-3" style="max-width:760px;">
+          <h6 class="mb-3" data-i18n="dispose_title">จำหน่ายอุปกรณ์</h6>
+          <form id="disposeForm">
+            <input type="hidden" id="dispRow" value="">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_type">ประเภทอุปกรณ์</label>
+                <select class="form-select" id="dispType">
+                  <option value="" data-i18n="type_all">ทั้งหมด</option>
+                  <option value="Firefighting" data-i18n="type_Firefighting">อุปกรณ์ดับเพลิง</option>
+                  <option value="Rescue" data-i18n="type_Rescue">อุปกรณ์ Rescue</option>
+                  <option value="Chemical" data-i18n="type_Chemical">อุปกรณ์เก็บกู้สารเคมี</option>
+                  <option value="Tools" data-i18n="type_Tools">เครื่องมือ</option>
+                  <option value="Other" data-i18n="type_Other">อื่นๆ</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_equipment">เลือกอุปกรณ์</label><span class="required-mark">*</span>
+                <div class="input-group">
+                  <select class="form-select" id="dispEquipment" required></select>
+                  <button class="btn btn-outline-secondary" type="button" id="dispScanBtn"><i class="bi bi-qr-code-scan"></i></button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_disposeQty">จำนวนที่ต้องการจำหน่าย</label><span class="required-mark">*</span>
+                <input type="number" min="1" class="form-control" id="dispQuantity" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_disposedBy">ชื่อผู้จำหน่าย</label>
+                <input type="text" class="form-control" id="dispBy" disabled>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_disposeDate">วันที่จำหน่าย</label>
+                <input type="date" class="form-control" id="dispDate">
+              </div>
+              <div class="col-12">
+                <label class="form-label" data-i18n="field_disposeReason">ข้อมูลการจำหน่าย</label>
+                <textarea class="form-control" id="dispReason" rows="2"></textarea>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-signal mt-3"><span data-i18n="save">บันทึก</span></button>
+            <button type="button" class="btn btn-outline-secondary mt-3 d-none" id="dispCancelEditBtn"><span data-i18n="cancelEdit">ยกเลิกการแก้ไข</span></button>
+          </form>
+        </div>
+        <div class="panel">
+          <h6 class="mb-3" data-i18n="disposeHistory">ประวัติการจำหน่ายอุปกรณ์</h6>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr>
+                <th data-i18n="col_id">รหัสอุปกรณ์</th><th data-i18n="col_name">รายการอุปกรณ์</th>
+                <th data-i18n="col_qty">จำนวน</th><th data-i18n="field_disposedBy">ชื่อผู้จำหน่าย</th>
+                <th data-i18n="field_disposeDate">วันที่จำหน่าย</th><th data-i18n="field_disposeReason">ข้อมูลการจำหน่าย</th>
+                <th data-i18n="col_actions">การจัดการ</th>
+              </tr></thead>
+              <tbody id="disposeTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== BORROW / RETURN ===== -->
+      <section class="page-section" id="page-borrow">
+        <div class="panel mb-3" style="max-width:760px;">
+          <h6 class="mb-3" data-i18n="borrow_title">เบิกยืมอุปกรณ์</h6>
+          <form id="borrowForm">
+            <input type="hidden" id="brwRow" value="">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_type">ประเภทอุปกรณ์</label>
+                <select class="form-select" id="brwType">
+                  <option value="" data-i18n="type_all">ทั้งหมด</option>
+                  <option value="Firefighting" data-i18n="type_Firefighting">อุปกรณ์ดับเพลิง</option>
+                  <option value="Rescue" data-i18n="type_Rescue">อุปกรณ์ Rescue</option>
+                  <option value="Chemical" data-i18n="type_Chemical">อุปกรณ์เก็บกู้สารเคมี</option>
+                  <option value="Tools" data-i18n="type_Tools">เครื่องมือ</option>
+                  <option value="Other" data-i18n="type_Other">อื่นๆ</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_equipment">เลือกอุปกรณ์</label><span class="required-mark">*</span>
+                <div class="input-group">
+                  <select class="form-select" id="brwEquipment" required></select>
+                  <button class="btn btn-outline-secondary" type="button" id="brwScanBtn"><i class="bi bi-qr-code-scan"></i></button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_borrowQty">จำนวนที่ต้องการยืม</label><span class="required-mark">*</span>
+                <input type="number" min="1" class="form-control" id="brwQuantity" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_borrowerName">ชื่อผู้ยืม</label><span class="required-mark">*</span>
+                <input type="text" class="form-control" id="brwBorrower" list="borrowerNames" required>
+                <datalist id="borrowerNames"></datalist>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_department">แผนกผู้ยืม</label>
+                <input type="text" class="form-control" id="brwDepartment" list="borrowerDepts">
+                <datalist id="borrowerDepts"></datalist>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_lenderName">ชื่อผู้ให้ยืม</label>
+                <input type="text" class="form-control" id="brwLender" disabled>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_borrowDate">วันที่ยืม</label>
+                <input type="date" class="form-control" id="brwBorrowDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" data-i18n="field_dueDate">วันที่ต้องคืน</label>
+                <input type="date" class="form-control" id="brwDueDate">
+              </div>
+              <div class="col-12">
+                <label class="form-label" data-i18n="field_borrowReason">เหตุผลของการยืม</label>
+                <textarea class="form-control" id="brwReason" rows="2"></textarea>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-signal mt-3"><span data-i18n="save">บันทึก</span></button>
+            <button type="button" class="btn btn-outline-secondary mt-3 d-none" id="brwCancelEditBtn"><span data-i18n="cancelEdit">ยกเลิกการแก้ไข</span></button>
+          </form>
+        </div>
+        <div class="panel">
+          <h6 class="mb-3" data-i18n="borrowHistory">ประวัติการยืม-คืนอุปกรณ์</h6>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr>
+                <th data-i18n="col_id">รหัสอุปกรณ์</th><th data-i18n="col_name">รายการอุปกรณ์</th>
+                <th data-i18n="col_qty">จำนวน</th><th data-i18n="field_borrowerName">ชื่อผู้ยืม</th>
+                <th data-i18n="field_department">แผนกผู้ยืม</th>
+                <th data-i18n="field_borrowDate">วันที่ยืม</th><th data-i18n="field_dueDate">วันที่ต้องคืน</th>
+                <th data-i18n="col_status">สถานะ</th><th data-i18n="col_actions">การจัดการ</th>
+              </tr></thead>
+              <tbody id="borrowTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== USERS (Admin only) ===== -->
+      <section class="page-section" id="page-users">
+        <div class="panel">
+          <div class="d-flex justify-content-between mb-3">
+            <h6 class="mb-0" data-i18n="users_title">จัดการผู้ใช้งาน</h6>
+            <button class="btn btn-signal" id="addUserBtn"><i class="bi bi-person-plus"></i> <span data-i18n="addUser">เพิ่มผู้ใช้งาน</span></button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead><tr>
+                <th data-i18n="username">ชื่อผู้ใช้</th><th data-i18n="field_fullName">ชื่อ-นามสกุล</th>
+                <th data-i18n="field_role">สิทธิ์การใช้งาน</th><th data-i18n="field_status">สถานะ</th>
+                <th data-i18n="col_actions">การจัดการ</th>
+              </tr></thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Equipment detail popup -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title" data-i18n="detail_title">รายละเอียดอุปกรณ์</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="detailModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Save success + QR -->
+<div class="modal fade" id="qrModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center">
+      <div class="modal-body py-4">
+        <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem;"></i>
+        <h6 class="mt-2" data-i18n="saveSuccess">ข้อมูลอุปกรณ์บันทึกสำเร็จแล้ว</h6>
+        <p class="text-muted small" data-i18n="saveQrHint">คุณสามารถกดบันทึก QR Code ของอุปกรณ์ชิ้นนี้ลงในเครื่องได้</p>
+        <div id="qrPreviewBox"><canvas id="qrCanvas"></canvas></div>
+        <div class="mt-3 d-flex justify-content-center gap-2">
+          <button class="btn btn-outline-secondary" id="downloadQrBtn"><span data-i18n="downloadQr">บันทึก QR Code</span></button>
+          <button class="btn btn-signal" data-bs-dismiss="modal"><span data-i18n="close">ปิด</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR scanner -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title" data-i18n="scanQr">สแกน QR Code</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><div id="qrReader" style="width:100%;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title" data-i18n="confirmDeleteTitle">ยืนยันการลบ</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" data-i18n="confirmDeleteMsg">คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? ไม่สามารถกู้คืนได้</div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">ยกเลิก</button>
+        <button class="btn btn-danger" id="confirmActionBtn" data-i18n="confirm">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add / edit user -->
+<div class="modal fade" id="userModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title" id="userModalTitle" data-i18n="addUser">เพิ่มผู้ใช้งาน</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="userForm">
+          <input type="hidden" id="userRow">
+          <div class="mb-2">
+            <label class="form-label" data-i18n="username">ชื่อผู้ใช้</label>
+            <input type="text" class="form-control" id="userUsername" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" data-i18n="password">รหัสผ่าน</label>
+            <input type="text" class="form-control" id="userPassword">
+          </div>
+          <div class="mb-2">
+            <label class="form-label" data-i18n="field_fullName">ชื่อ-นามสกุล</label>
+            <input type="text" class="form-control" id="userFullName" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" data-i18n="field_role">สิทธิ์การใช้งาน</label>
+            <select class="form-select" id="userRole">
+              <option value="User" data-i18n="role_User">User</option>
+              <option value="Admin" data-i18n="role_Admin">Admin</option>
+            </select>
+          </div>
+          <div class="mb-2" id="userStatusWrap" style="display:none;">
+            <label class="form-label" data-i18n="field_status">สถานะ</label>
+            <select class="form-select" id="userStatus">
+              <option value="Active" data-i18n="status_Active">เปิดใช้งาน</option>
+              <option value="Inactive" data-i18n="status_Inactive">ปิดใช้งาน</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">ยกเลิก</button>
+        <button class="btn btn-signal" id="userSaveBtn" data-i18n="save">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden printable area for PDF report -->
+<div id="pdfReportArea" style="position:absolute;left:-9999px;top:0;width:800px;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
