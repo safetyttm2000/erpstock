@@ -43,7 +43,7 @@ function restoreSession() {
     try {
       currentUser = JSON.parse(userData);
       currentUser.token = token;
-      Api.token = token;
+      // token stored in localStorage
       enterApp();
       return;
     } catch (e) { /* fall through */ }
@@ -88,7 +88,7 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
   const errEl    = document.getElementById('loginError');
   errEl.style.display = 'none';
   try {
-    const res = await Api.call('login', { username, password });
+    const res = await Api.call('loginUser', { username, password });
     if (!res.success) { errEl.textContent = res.message; errEl.style.display = ''; return; }
     const d = res.data;
     localStorage.setItem('erp_token', d.token);
@@ -112,11 +112,11 @@ document.getElementById('togglePasswordBtn')?.addEventListener('click', () => {
 document.getElementById('logoutBtn').addEventListener('click', e => { e.preventDefault(); doLogout(); });
 
 function doLogout() {
-  if (currentUser) Api.call('logout', {}).catch(() => {});
+  if (currentUser) Api.call('logoutUser', {}).catch(() => {});
   localStorage.removeItem('erp_token');
   localStorage.removeItem('erp_user');
   currentUser = null;
-  Api.token = null;
+  // token cleared from localStorage
   showLogin();
 }
 
