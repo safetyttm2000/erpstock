@@ -40,27 +40,184 @@ a { text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--navy) 0%, #2C3A4E 45%, var(--navy-soft) 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 12s ease infinite;
+  position: relative;
+  overflow: hidden;
   padding: 20px;
+  background: #0d1520;
 }
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+
+/* Animated gradient orbs in background */
+#loginScreen::before,
+#loginScreen::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  pointer-events: none;
 }
+#loginScreen::before {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #E63946 0%, transparent 70%);
+  top: -120px; left: -100px;
+  animation: orbFloat1 10s ease-in-out infinite;
+}
+#loginScreen::after {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, #2A9D8F 0%, transparent 70%);
+  bottom: -100px; right: -80px;
+  animation: orbFloat2 13s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(60px, 40px) scale(1.1); }
+  66%      { transform: translate(-30px, 70px) scale(0.95); }
+}
+@keyframes orbFloat2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  40%      { transform: translate(-50px,-40px) scale(1.08); }
+  70%      { transform: translate(30px,-70px) scale(0.92); }
+}
+
+/* Floating particles canvas sits behind everything */
+#loginParticles {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+}
+
+/* Login card — glassmorphism */
 .login-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px 36px;
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 24px;
+  padding: 44px 40px 36px;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  max-width: 420px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05);
   text-align: center;
+  animation: cardSlideUp .6s cubic-bezier(.22,.9,.36,1) both;
 }
-.login-card img.logo { height: 64px; margin-bottom: 14px; }
-.login-lang-toggle { position: absolute; top: 18px; right: 18px; }
+@keyframes cardSlideUp {
+  from { opacity:0; transform: translateY(32px) scale(.97); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* Logo ring pulse */
+.login-logo-wrap {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.2);
+  margin-bottom: 16px;
+  animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,0); }
+  50%      { box-shadow: 0 0 0 10px rgba(230,57,70,0.2); }
+}
+.login-logo-wrap img.logo { height: 52px; }
+
+.login-card h1 { color: #fff; font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+.login-card .login-subtitle { color: rgba(255,255,255,.55); font-size: .9rem; margin-bottom: 28px; }
+
+/* Form fields on dark glass */
+.login-card .form-label { color: rgba(255,255,255,.75); font-size: .85rem; font-weight: 500; }
+.login-card .form-control {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.login-card .form-control:focus {
+  background: rgba(255,255,255,0.16);
+  border-color: var(--signal-red);
+  box-shadow: 0 0 0 3px rgba(230,57,70,0.25);
+  color: #fff;
+  outline: none;
+}
+.login-card .form-control::placeholder { color: rgba(255,255,255,.35); }
+
+/* Input group password toggle */
+.login-card .input-group .form-control { border-right: none; border-radius: 10px 0 0 10px !important; }
+.login-card .input-group .btn-outline-secondary {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-left: none;
+  color: rgba(255,255,255,.6);
+  border-radius: 0 10px 10px 0 !important;
+  transition: background .2s, color .2s;
+}
+.login-card .input-group .btn-outline-secondary:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+/* Login submit button */
+.login-card .btn-signal {
+  background: linear-gradient(135deg, #E63946 0%, #c0222f 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 11px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  box-shadow: 0 6px 24px rgba(230,57,70,.45);
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.login-card .btn-signal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(230,57,70,.6);
+  filter: brightness(1.08);
+  color: #fff;
+}
+.login-card .btn-signal:active { transform: translateY(0); }
+
+/* Error message */
+#loginError {
+  background: rgba(230,57,70,0.18);
+  border: 1px solid rgba(230,57,70,0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #ff8a92;
+  font-size: .85rem;
+}
+
+/* Connection test status */
+#loginApiStatus {
+  font-size: .78rem;
+  color: rgba(255,255,255,.45);
+  margin-top: 18px;
+}
+#loginApiStatus .dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background: #aaa;
+  vertical-align: middle;
+}
+#loginApiStatus.ok .dot   { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
+#loginApiStatus.fail .dot { background: var(--signal-red); box-shadow: 0 0 6px var(--signal-red); }
+
+/* Lang toggle on login */
+.login-lang-toggle {
+  position: absolute; top: 18px; right: 18px; z-index: 2;
+}
+.login-lang-toggle .btn {
+  background: rgba(255,255,255,.1);
+  border-color: rgba(255,255,255,.2);
+  color: rgba(255,255,255,.7);
+  font-size: .8rem; font-weight: 600;
+}
+.login-lang-toggle .btn.active,
+.login-lang-toggle .btn:hover {
+  background: rgba(255,255,255,.22);
+  color: #fff; border-color: rgba(255,255,255,.4);
+}
 
 .btn-signal {
   background: var(--signal-red);
@@ -244,3 +401,15 @@ a { text-decoration: none; }
   #pdfReportArea th, #pdfReportArea td { border: 1px solid #ccc; padding: 6px 8px; }
   #pdfReportArea th { background: #1B2430; color: #fff; }
 }
+
+/* ---------------- Login card shake on wrong password ---------------- */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  15%      { transform: translateX(-8px); }
+  30%      { transform: translateX(8px); }
+  45%      { transform: translateX(-6px); }
+  60%      { transform: translateX(6px); }
+  75%      { transform: translateX(-3px); }
+  90%      { transform: translateX(3px); }
+}
+.login-card.shake { animation: shake .6s cubic-bezier(.36,.07,.19,.97) both; }
