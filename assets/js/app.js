@@ -18,9 +18,102 @@ const bsModal = id => bootstrap.Modal.getOrCreateInstance(document.getElementByI
 
 // ── DOM ready ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  initParticles();
   initLanguage();
   restoreSession();
+  checkApiConnection();
 });
+
+// ============================================================
+// PARTICLES — lightweight canvas animation
+// ============================================================
+function initParticles() {
+  const canvas = document.getElementById('loginParticles');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['rgba(230,57,70,', 'rgba(42,157,143,', 'rgba(244,163,0,', 'rgba(255,255,255,'];
+  for (let i = 0; i < 55; i++) {
+    particles.push({
+      x: Math.random() * 1000,
+      y: Math.random() * 1000,
+      r: Math.random() * 2.2 + 0.4,
+      dx: (Math.random() - 0.5) * 0.35,
+      dy: (Math.random() - 0.5) * 0.35,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      alpha: Math.random() * 0.5 + 0.15
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.dx; p.y += p.dy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + p.alpha + ')';
+      ctx.fill();
+    });
+    // Draw faint connecting lines between nearby particles
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 110) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = 'rgba(255,255,255,' + (0.06 * (1 - dist/110)) + ')';
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ============================================================
+// CONNECTION TEST
+// ============================================================
+async function checkApiConnection() {
+  const el = document.getElementById('loginApiStatus');
+  if (!el) return;
+  const dot  = el.querySelector('.dot');
+  const text = el.querySelector('.status-text');
+  if (!window.APP_CONFIG || !window.APP_CONFIG.API_URL ||
+      window.APP_CONFIG.API_URL.includes('PASTE_YOUR')) {
+    el.className = 'fail';
+    text.textContent = 'ยังไม่ได้ตั้งค่า API_URL ใน config.js';
+    return;
+  }
+  text.textContent = 'กำลังตรวจสอบการเชื่อมต่อ...';
+  try {
+    const res = await Api.call('ping', {});
+    if (res && (res.success || res.message)) {
+      el.className = 'ok';
+      text.textContent = 'เชื่อมต่อ Server สำเร็จ ✓';
+    } else {
+      el.className = 'fail';
+      text.textContent = 'เชื่อมต่อได้แต่ได้รับ response ผิดปกติ';
+    }
+  } catch (e) {
+    el.className = 'fail';
+    text.textContent = 'เชื่อมต่อ Server ไม่ได้ — ตรวจสอบ API_URL';
+  }
+}
 
 // ============================================================
 // LANGUAGE
@@ -43,7 +136,6 @@ function restoreSession() {
     try {
       currentUser = JSON.parse(userData);
       currentUser.token = token;
-      // token stored in localStorage
       enterApp();
       return;
     } catch (e) { /* fall through */ }
@@ -62,11 +154,7 @@ function enterApp() {
   document.getElementById('topbarUser').textContent = currentUser.fullName || currentUser.username;
   const sidebarName = document.getElementById('sidebarUserName');
   if (sidebarName) sidebarName.textContent = currentUser.fullName || currentUser.username;
-  if (currentUser.role !== 'Admin') {
-    document.getElementById('navUsers').style.display = 'none';
-  } else {
-    document.getElementById('navUsers').style.display = '';
-  }
+  document.getElementById('navUsers').style.display = currentUser.role === 'Admin' ? '' : 'none';
   navigateTo('dashboard');
   setupNav();
   setupTopbar();
@@ -86,29 +174,62 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const errEl    = document.getElementById('loginError');
+  const submitBtn = document.getElementById('loginSubmitBtn');
+  const btnText   = submitBtn.querySelector('.login-btn-text');
+  const btnSpin   = submitBtn.querySelector('.login-btn-spinner');
+
+  // Hide error, show loading
   errEl.style.display = 'none';
+  submitBtn.disabled  = true;
+  btnText.textContent = 'กำลังเข้าสู่ระบบ...';
+  btnSpin.style.display = '';
+
   try {
     const res = await Api.call('loginUser', { username, password });
-    if (!res.success) { errEl.textContent = res.message; errEl.style.display = ''; return; }
+
+    if (!res.success) {
+      errEl.textContent   = res.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+      errEl.style.display = '';
+      // Shake the card
+      const card = document.querySelector('.login-card');
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 600);
+      return;
+    }
+
     const d = res.data;
     localStorage.setItem('erp_token', d.token);
-    localStorage.setItem('erp_user', JSON.stringify({ username: d.username, fullName: d.fullName, role: d.role }));
+    localStorage.setItem('erp_user', JSON.stringify({
+      username: d.username, fullName: d.fullName, role: d.role
+    }));
     currentUser = { token: d.token, username: d.username, fullName: d.fullName, role: d.role };
-    Api.token = d.token;
     enterApp();
+
   } catch (err) {
-    errEl.textContent = err.message || 'เกิดข้อผิดพลาด';
+    errEl.textContent   = 'เกิดข้อผิดพลาด: ' + (err.message || 'ไม่สามารถติดต่อ Server ได้');
     errEl.style.display = '';
+  } finally {
+    submitBtn.disabled  = false;
+    btnText.textContent = t('loginBtn') || 'เข้าสู่ระบบ';
+    btnSpin.style.display = 'none';
   }
 });
 
-// Toggle password visibility
-document.getElementById('togglePasswordBtn')?.addEventListener('click', () => {
-  const inp = document.getElementById('loginPassword');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
+// ── Password show/hide toggle ─────────────────────────────
+document.getElementById('togglePasswordBtn')?.addEventListener('click', function () {
+  const inp  = document.getElementById('loginPassword');
+  const icon = document.getElementById('togglePasswordIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    inp.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+  inp.focus();
 });
 
-// Logout
+// ── Logout ───────────────────────────────────────────────
 document.getElementById('logoutBtn').addEventListener('click', e => { e.preventDefault(); doLogout(); });
 
 function doLogout() {
@@ -116,7 +237,6 @@ function doLogout() {
   localStorage.removeItem('erp_token');
   localStorage.removeItem('erp_user');
   currentUser = null;
-  // token cleared from localStorage
   showLogin();
 }
 
