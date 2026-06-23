@@ -15,31 +15,47 @@
 
 <!-- ================= LOGIN SCREEN ================= -->
 <div id="loginScreen">
+  <canvas id="loginParticles"></canvas>
+
   <div class="lang-switch login-lang-toggle btn-group" role="group">
-    <button class="btn btn-sm btn-light" data-lang-btn="th" onclick="applyLanguage('th')">TH</button>
-    <button class="btn btn-sm btn-light" data-lang-btn="en" onclick="applyLanguage('en')">EN</button>
+    <button class="btn btn-sm" data-lang-btn="th" onclick="applyLanguage('th')">TH</button>
+    <button class="btn btn-sm" data-lang-btn="en" onclick="applyLanguage('en')">EN</button>
   </div>
+
   <div class="login-card">
-    <img src="https://img2.pic.in.th/ERP-Logo.png" class="logo" alt="ERP Stock System">
-    <h1 class="h4 mb-1" data-i18n="appName">ERP Stock System</h1>
-    <p class="text-muted mb-4" data-i18n="loginTitle">เข้าสู่ระบบ</p>
+    <div class="login-logo-wrap">
+      <img src="https://img2.pic.in.th/ERP-Logo.png" class="logo" alt="ERP Stock System">
+    </div>
+    <h1 data-i18n="appName">ERP Stock System</h1>
+    <p class="login-subtitle" data-i18n="loginSubtitle">ระบบบริหารจัดการสต็อกอุปกรณ์</p>
+
     <form id="loginForm" class="text-start" autocomplete="off">
       <div class="mb-3">
         <label class="form-label" data-i18n="username">ชื่อผู้ใช้</label>
-        <input type="text" class="form-control" id="loginUsername" required>
+        <input type="text" class="form-control" id="loginUsername"
+               placeholder="กรอกชื่อผู้ใช้" data-i18n-placeholder="username" required autocomplete="username">
       </div>
-      <div class="mb-2">
+      <div class="mb-3">
         <label class="form-label" data-i18n="password">รหัสผ่าน</label>
         <div class="input-group">
-          <input type="password" class="form-control" id="loginPassword" required>
-          <button type="button" class="btn btn-outline-secondary" id="togglePasswordBtn"><i class="bi bi-eye"></i></button>
+          <input type="password" class="form-control" id="loginPassword"
+                 placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="btn btn-outline-secondary" id="togglePasswordBtn" tabindex="-1">
+            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+          </button>
         </div>
       </div>
-      <div id="loginError" class="text-danger small mb-2" style="display:none;"></div>
-      <button type="submit" class="btn btn-signal w-100 mt-3" id="loginSubmitBtn">
-        <span data-i18n="loginBtn">เข้าสู่ระบบ</span>
+      <div id="loginError" class="mb-3" style="display:none;"></div>
+      <button type="submit" class="btn btn-signal w-100" id="loginSubmitBtn">
+        <span class="login-btn-text" data-i18n="loginBtn">เข้าสู่ระบบ</span>
+        <span class="login-btn-spinner spinner-border spinner-border-sm ms-2" style="display:none;"></span>
       </button>
     </form>
+
+    <div id="loginApiStatus">
+      <span class="dot"></span>
+      <span class="status-text">กำลังตรวจสอบการเชื่อมต่อ...</span>
+    </div>
   </div>
 </div>
 
