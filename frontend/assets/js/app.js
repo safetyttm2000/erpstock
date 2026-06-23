@@ -91,27 +91,36 @@ function initParticles() {
 async function checkApiConnection() {
   const el = document.getElementById('loginApiStatus');
   if (!el) return;
-  const dot  = el.querySelector('.dot');
   const text = el.querySelector('.status-text');
+
   if (!window.APP_CONFIG || !window.APP_CONFIG.API_URL ||
       window.APP_CONFIG.API_URL.includes('PASTE_YOUR')) {
     el.className = 'fail';
-    text.textContent = 'ยังไม่ได้ตั้งค่า API_URL ใน config.js';
+    text.textContent = '⚠️ ยังไม่ได้ตั้งค่า API_URL ใน config.js';
     return;
   }
+
   text.textContent = 'กำลังตรวจสอบการเชื่อมต่อ...';
+
+  // Timeout wrapper — GAS can take up to 6 s on cold start
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), 8000)
+  );
+
   try {
-    const res = await Api.call('ping', {});
-    if (res && (res.success || res.message)) {
+    const res = await Promise.race([Api.call('ping', {}), timeout]);
+    if (res && res.success) {
       el.className = 'ok';
       text.textContent = 'เชื่อมต่อ Server สำเร็จ ✓';
     } else {
       el.className = 'fail';
-      text.textContent = 'เชื่อมต่อได้แต่ได้รับ response ผิดปกติ';
+      text.textContent = 'Server ตอบกลับผิดปกติ — ' + (res && res.message ? res.message : 'ตรวจสอบ Apps Script');
     }
   } catch (e) {
     el.className = 'fail';
-    text.textContent = 'เชื่อมต่อ Server ไม่ได้ — ตรวจสอบ API_URL';
+    text.textContent = e.message === 'timeout'
+      ? '⏱ Server ตอบช้าเกินไป (GAS cold start) — ลองใหม่อีกครั้ง'
+      : '❌ เชื่อมต่อไม่ได้ — ตรวจสอบ API_URL ใน config.js';
   }
 }
 
@@ -626,7 +635,7 @@ function resetEquipmentForm() {
   document.getElementById('eqRow').value = '';
   document.getElementById('eqImagePreview').src = '';
   document.getElementById('eqOtherLocationWrap').style.display = 'none';
-  document.getElementById('eqCancelEditBtn')?.style.display = 'none';
+  var _ecb = document.getElementById('eqCancelEditBtn'); if(_ecb) _ecb.style.display = 'none';
   const heading = document.querySelector('#page-addEquipment h6[data-i18n="nav_addEquipment"]');
   if (heading) heading.textContent = t('nav_addEquipment') || 'เพิ่มอุปกรณ์';
   // Re-populate locations
@@ -659,7 +668,7 @@ function editEquipment(idx) {
         document.getElementById('eqOtherLocation').value = row.Location;
       }
     }
-    document.getElementById('eqCancelEditBtn')?.style.display = '';
+    var _ecb2 = document.getElementById('eqCancelEditBtn'); if(_ecb2) _ecb2.style.display = '';
     const heading = document.querySelector('#page-addEquipment h6[data-i18n="nav_addEquipment"]');
     if (heading) heading.textContent = t('edit') + ' — ' + row.Name;
   }, 200);
