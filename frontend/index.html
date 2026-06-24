@@ -165,7 +165,7 @@
       <section class="page-section" id="page-addEquipment">
         <div class="panel" style="max-width:760px;">
           <h6 class="mb-3" id="addEquipmentTitle" data-i18n="addEquipment_title">เพิ่มอุปกรณ์ใหม่</h6>
-          <form id="equipmentForm">
+          <form id="equipmentForm" novalidate>
             <input type="hidden" id="eqRow">
             <div class="row g-3">
               <div class="col-md-6">
@@ -238,7 +238,7 @@
       <section class="page-section" id="page-dispose">
         <div class="panel mb-3" style="max-width:760px;">
           <h6 class="mb-3" data-i18n="dispose_title">จำหน่ายอุปกรณ์</h6>
-          <form id="disposeForm">
+          <form id="disposeForm" novalidate>
             <input type="hidden" id="dispRow" value="">
             <div class="row g-3">
               <div class="col-md-6">
@@ -300,7 +300,7 @@
       <section class="page-section" id="page-borrow">
         <div class="panel mb-3" style="max-width:760px;">
           <h6 class="mb-3" data-i18n="borrow_title">เบิกยืมอุปกรณ์</h6>
-          <form id="borrowForm">
+          <form id="borrowForm" novalidate>
             <input type="hidden" id="brwRow" value="">
             <div class="row g-3">
               <div class="col-md-6">
@@ -457,7 +457,7 @@
     <div class="modal-content">
       <div class="modal-header"><h6 class="modal-title" id="userModalTitle" data-i18n="addUser">เพิ่มผู้ใช้งาน</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-        <form id="userForm">
+        <form id="userForm" novalidate>
           <input type="hidden" id="userRow">
           <div class="mb-2">
             <label class="form-label" data-i18n="username">ชื่อผู้ใช้</label>
@@ -485,11 +485,11 @@
               <option value="Inactive" data-i18n="status_Inactive">ปิดใช้งาน</option>
             </select>
           </div>
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-signal flex-grow-1" id="userSaveBtn" data-i18n="save">บันทึก</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">ยกเลิก</button>
+          </div>
         </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">ยกเลิก</button>
-        <button class="btn btn-signal" id="userSaveBtn" data-i18n="save">บันทึก</button>
       </div>
     </div>
   </div>
