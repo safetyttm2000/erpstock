@@ -286,15 +286,15 @@ function setupTopbar() {
   const sidebar  = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebarBackdrop');
   document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-    backdrop.classList.toggle('d-none');
+    sidebar.classList.toggle('show');
+    backdrop.classList.toggle('show');
   });
   backdrop.addEventListener('click', closeSidebar);
 }
 
 function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarBackdrop').style.display = 'none';
+  document.getElementById('sidebar').classList.remove('show');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
 }
 
 // ============================================================
@@ -560,18 +560,28 @@ async function submitEquipmentForm(e) {
   const rowVal = document.getElementById('eqRow')?.value || '';
   const isEdit = !!rowVal;
 
-  // Location
+  // ── Validate required fields manually (avoid cryptic browser popups) ──
+  const eqType = document.getElementById('eqType')?.value || '';
+  const eqName = (document.getElementById('eqName')?.value || '').trim();
+  const eqQty  = document.getElementById('eqQuantity')?.value;
+
+  if (!eqType) { showToast('กรุณาเลือกประเภทอุปกรณ์', 'danger'); return; }
+  if (!eqName) { showToast('กรุณากรอกชื่ออุปกรณ์', 'danger'); return; }
+  if (eqQty === '' || eqQty === null) { showToast('กรุณากรอกจำนวนอุปกรณ์', 'danger'); return; }
+
+  // ── Location ──
   let location = document.getElementById('eqLocation')?.value || '';
   if (location === '__other__') {
     location = (document.getElementById('eqOtherLocation')?.value || '').trim();
-    if (!location) { showToast(t('err_location') || 'กรุณาระบุสถานที่', 'danger'); return; }
+    if (!location) { showToast('กรุณาระบุสถานที่เก็บ', 'danger'); return; }
   }
+  // ไม่บังคับ location ถ้าไม่ได้เลือก
 
   const equipment = {
-    Type:          document.getElementById('eqType')?.value || '',
-    Name:          document.getElementById('eqName')?.value || '',
+    Type:          eqType,
+    Name:          eqName,
     Description:   document.getElementById('eqDescription')?.value || '',
-    Quantity:      parseInt(document.getElementById('eqQuantity')?.value) || 0,
+    Quantity:      parseInt(eqQty) || 0,
     MinQuantity:   parseInt(document.getElementById('eqMinQuantity')?.value) || 0,
     Location:      location,
     ExpiryDate:    document.getElementById('eqExpiryDate')?.value || '',
@@ -579,33 +589,45 @@ async function submitEquipmentForm(e) {
     ImageURL:      document.getElementById('eqImageUrl')?.value || '',
   };
 
-  // Image file upload
-  const fileInput = document.getElementById('eqImageFile');
-  if (fileInput?.files[0]) {
-    try {
-      const imgData = await getImageBase64(fileInput.files[0]);
-      const upRes = await Api.call('uploadImage', imgData);
-      if (upRes.success) equipment.ImageURL = upRes.data.url;
-      else { showToast(upRes.message || 'อัปโหลดรูปไม่สำเร็จ', 'warning'); }
-    } catch (err) { showToast('อัปโหลดรูปล้มเหลว', 'danger'); return; }
-  }
-
-  const action = isEdit ? 'updateEquipment' : 'addEquipment';
-  const payload = isEdit ? { row: parseInt(rowVal), equipment } : { equipment };
+  // ── Loading state ──
+  const saveBtn = document.getElementById('eqSaveBtn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'กำลังบันทึก...'; }
 
   try {
+    // Image file upload (optional)
+    const fileInput = document.getElementById('eqImageFile');
+    if (fileInput?.files[0]) {
+      try {
+        const imgData = await getImageBase64(fileInput.files[0]);
+        const upRes = await Api.call('uploadImage', imgData);
+        if (upRes.success) equipment.ImageURL = upRes.data.url;
+        else showToast('อัปโหลดรูปภาพไม่สำเร็จ: ' + upRes.message, 'warning');
+      } catch (err) { showToast('อัปโหลดรูปล้มเหลว', 'danger'); return; }
+    }
+
+    const action  = isEdit ? 'updateEquipment' : 'addEquipment';
+    const payload = isEdit ? { row: parseInt(rowVal), equipment } : { equipment };
     const res = await Api.call(action, payload);
-    if (!res.success) { showToast(res.message || t('err_generic') || 'เกิดข้อผิดพลาด', 'danger'); return; }
-    showToast(t('saved') || 'บันทึกสำเร็จ', 'success');
-    equipCache = []; // clear cache
+
+    if (!res.success) {
+      showToast('บันทึกไม่สำเร็จ: ' + (res.message || 'เกิดข้อผิดพลาด'), 'danger');
+      return;
+    }
+
+    showToast('บันทึกสำเร็จ ✓', 'success');
+    equipCache = [];
 
     if (!isEdit && res.data?.id) {
-      // Show QR modal for new equipment
       showQrModal(res.data.id);
     } else {
       resetEquipmentForm();
     }
-  } catch (err) { showToast(err.message, 'danger'); }
+
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + (err.message || 'ไม่ทราบสาเหตุ'), 'danger');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('save') || 'บันทึก'; }
+  }
 }
 
 function showQrModal(equipId) {
@@ -1007,24 +1029,37 @@ function openEditUser(r) {
 
 async function submitUser(e) {
   e.preventDefault();
-  const rowVal = document.getElementById('userRow').value;
-  const isEdit = !!rowVal;
-  const user = {
-    Username: document.getElementById('userUsername').value,
-    FullName: document.getElementById('userFullName').value,
-    Role:     document.getElementById('userRole').value,
-    Password: document.getElementById('userPassword').value,
-  };
-  if (isEdit) user.Status = document.getElementById('userStatus').value;
+  const rowVal  = document.getElementById('userRow').value;
+  const isEdit  = !!rowVal;
+  const username = (document.getElementById('userUsername')?.value || '').trim();
+  const fullName = (document.getElementById('userFullName')?.value || '').trim();
+  const password = (document.getElementById('userPassword')?.value || '').trim();
+  const role     = document.getElementById('userRole')?.value || 'User';
+
+  if (!username) { showToast('กรุณากรอกชื่อผู้ใช้', 'danger'); return; }
+  if (!fullName) { showToast('กรุณากรอกชื่อ-นามสกุล', 'danger'); return; }
+  if (!isEdit && !password) { showToast('กรุณากรอกรหัสผ่าน', 'danger'); return; }
+
+  const user = { Username: username, FullName: fullName, Role: role, Password: password };
+  if (isEdit) user.Status = document.getElementById('userStatus')?.value || 'Active';
+
   const action  = isEdit ? 'updateUser' : 'addUser';
   const payload = isEdit ? { row: parseInt(rowVal), user } : { user };
+
+  const saveBtn = document.getElementById('userSaveBtn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'กำลังบันทึก...'; }
+
   try {
     const res = await Api.call(action, payload);
-    if (!res.success) { showToast(res.message, 'danger'); return; }
-    showToast(t('saved') || 'บันทึกสำเร็จ', 'success');
+    if (!res.success) { showToast('บันทึกไม่สำเร็จ: ' + (res.message || 'เกิดข้อผิดพลาด'), 'danger'); return; }
+    showToast('บันทึกสำเร็จ ✓', 'success');
     bsModal('userModal').hide();
     loadUsers();
-  } catch (err) { showToast(err.message, 'danger'); }
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + (err.message || 'ไม่ทราบสาเหตุ'), 'danger');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('save') || 'บันทึก'; }
+  }
 }
 
 async function deleteUser(row) {
