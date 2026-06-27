@@ -408,7 +408,7 @@ function renderEquipmentTable() {
     // col 9: Status badge
     // col 10: Actions
     tr.innerHTML = `
-      <td><canvas id="qrMini_${i}" class="qr-thumb" title="${esc(row.ID)}"></canvas></td>
+      <td class="text-center text-muted small fw-bold">${i + 1}</td>
       <td class="font-monospace small">${esc(row.ID)}</td>
       <td>${imgHtml}</td>
       <td>${esc(row.Name)}</td>
@@ -422,12 +422,6 @@ function renderEquipmentTable() {
         ${currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger eq-del-btn" data-idx="${i}" title="ลบ"><i class="bi bi-trash3"></i></button>` : ''}
       </td>`;
     tbody.appendChild(tr);
-
-    // QR mini — generate after element is in DOM
-    setTimeout(() => {
-      const cnv = document.getElementById('qrMini_' + i);
-      if (cnv) makeQrCode(cnv, row.ID || 'N/A', 40);
-    }, 0);
 
     tr.addEventListener('click', e => { if (e.target.closest('button')) return; openDetailModal(row); });
     tr.querySelector('.eq-edit-btn')?.addEventListener('click', e => { e.stopPropagation(); editEquipment(i); });
@@ -846,6 +840,7 @@ async function submitDispose(e) {
     EquipmentName: equip?.Name || equipSel?.selectedOptions[0]?.text?.split(' — ')[0] || '',
     Type:          equip?.Type || '',
     Quantity:      qty,
+    DisposedBy:    document.getElementById('dispBy')?.value || currentUser?.fullName || currentUser?.username || '',
     DisposeDate:   document.getElementById('dispDate')?.value || todayStr(),
     Reason:        document.getElementById('dispReason')?.value || '',
   };
