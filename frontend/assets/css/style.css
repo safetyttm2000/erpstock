@@ -9,16 +9,25 @@
 ---------------------------------------------------------------------- */
 
 :root {
-  --navy: #1B2430;
-  --navy-soft: #232E3D;
-  --signal-red: #E63946;
-  --safety-amber: #F4A300;
-  --teal: #2A9D8F;
-  --bg: #F6F6F4;
-  --text: #1B2430;
-  --text-muted: #6B7280;
-  --border: #E5E7EB;
-  --radius: 10px;
+  /* ── Sidebar palette: Blue-Grey 800 (สบายตา / easy on eyes) ── */
+  --sidebar-bg:      #2C3E50;   /* Wet Asphalt — warm dark blue-grey */
+  --sidebar-hover:   #34495E;   /* Midnight Blue */
+  --sidebar-active:  #1A252F;   /* deeper shade for active */
+  --sidebar-accent:  #3498DB;   /* calm blue accent line */
+  --sidebar-text:    #BDC3C7;   /* Silver */
+  --sidebar-text-hi: #ECF0F1;   /* Clouds */
+
+  /* ── App palette ── */
+  --navy:         #2C3E50;
+  --navy-soft:    #34495E;
+  --signal-red:   #E74C3C;      /* Alizarin — softer red */
+  --safety-amber: #F39C12;
+  --teal:         #1ABC9C;      /* Turquoise */
+  --bg:           #F4F6F8;
+  --text:         #2C3E50;
+  --text-muted:   #7F8C8D;
+  --border:       #E5E9ED;
+  --radius:       10px;
 }
 
 * { box-sizing: border-box; }
@@ -43,7 +52,7 @@ a { text-decoration: none; }
   position: relative;
   overflow: hidden;
   padding: 20px;
-  background: #0d1520;
+  background: linear-gradient(145deg, #1A252F 0%, #2C3E50 50%, #1A252F 100%);
 }
 
 /* Animated gradient orbs in background */
@@ -240,33 +249,64 @@ a { text-decoration: none; }
 .sidebar {
   width: 250px;
   flex-shrink: 0;
-  background: var(--navy);
-  color: #C7CDD6;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
   display: flex;
   flex-direction: column;
   position: fixed;
   top: 0; left: 0; bottom: 0;
   z-index: 1040;
   transition: transform .25s ease;
+  box-shadow: 2px 0 12px rgba(0,0,0,.15);
 }
-.sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sidebar .brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: var(--sidebar-active);
+}
 .sidebar .brand img { height: 34px; }
-.sidebar .brand-title { color: #fff; font-size: 1.05rem; }
+.sidebar .brand-title { color: var(--sidebar-text-hi); font-size: 1.05rem; }
+
+.sidebar .nav-section-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  color: rgba(189,195,199,.5);
+  padding: 14px 20px 4px;
+  text-transform: uppercase;
+}
 
 .sidebar .nav-link {
-  color: #C7CDD6;
-  padding: 12px 20px;
+  color: var(--sidebar-text);
+  padding: 11px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: .95rem;
+  font-size: .93rem;
   border-left: 3px solid transparent;
+  border-radius: 0;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
+  margin: 1px 8px;
+  border-radius: 6px;
 }
-.sidebar .nav-link:hover { background: rgba(255,255,255,.06); color: #fff; }
-.sidebar .nav-link.active { background: rgba(230,57,70,.15); color: #fff; border-left-color: var(--signal-red); }
-.sidebar .nav-link i { width: 20px; text-align: center; }
-.sidebar .nav-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: .85rem; }
+.sidebar .nav-link:hover {
+  background: rgba(255,255,255,.08);
+  color: var(--sidebar-text-hi);
+  border-left-color: rgba(52,152,219,.4);
+}
+.sidebar .nav-link.active {
+  background: rgba(52,152,219,.18);
+  color: var(--sidebar-text-hi);
+  border-left-color: var(--sidebar-accent);
+  font-weight: 600;
+}
+.sidebar .nav-link i { width: 20px; text-align: center; font-size: 1rem; }
+.sidebar .nav-footer {
+  margin-top: auto;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  font-size: .84rem;
+  color: rgba(189,195,199,.6);
+}
 
 .main-area { flex: 1; margin-left: 250px; display: flex; flex-direction: column; min-height: 100vh; }
 .topbar {
@@ -277,6 +317,7 @@ a { text-decoration: none; }
   align-items: center;
   justify-content: space-between;
   position: sticky; top: 0; z-index: 1020;
+  box-shadow: 0 1px 4px rgba(44,62,80,.06);
 }
 .page-content { padding: 24px; flex: 1; }
 .sidebar-toggle { display: none; }
