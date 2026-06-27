@@ -380,7 +380,7 @@ function renderEquipmentTable() {
 
   tbody.innerHTML = '';
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">${t('noData') || 'ไม่พบข้อมูล'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4">${t('noData') || 'ไม่พบข้อมูล'}</td></tr>`;
     return;
   }
 
@@ -392,38 +392,44 @@ function renderEquipmentTable() {
       NearExpiry: 'tag-nearexpiry', Expired: 'tag-expired'
     }[row.Status] || '';
     const statusLabel = t('status_' + row.Status) || row.Status;
+    const typeName    = row.Type ? (t('type_' + row.Type) || row.Type) : '—';
+    const imgHtml     = row.ImageURL
+      ? `<img src="${row.ImageURL}" class="equip-thumb" alt="" onerror="this.style.display='none'">`
+      : '<span class="text-muted" style="font-size:.8rem;">—</span>';
 
-    let qrCanvas = `<canvas id="qrMini_${i}" class="qr-thumb" title="QR: ${row.ID}"></canvas>`;
-    let imgHtml  = row.ImageURL ? `<img src="${row.ImageURL}" class="equip-thumb" alt="">` : '<span class="text-muted">—</span>';
-
+    // col 1: QR mini canvas (generated after insert)
+    // col 2: ID
+    // col 3: Image
+    // col 4: Name
+    // col 5: Type
+    // col 6: Remaining / Total
+    // col 7: Location
+    // col 8: Expiry
+    // col 9: Status badge
+    // col 10: Actions
     tr.innerHTML = `
-      <td>${qrCanvas}</td>
-      <td>${esc(row.ID)}</td>
+      <td><canvas id="qrMini_${i}" class="qr-thumb" title="${esc(row.ID)}"></canvas></td>
+      <td class="font-monospace small">${esc(row.ID)}</td>
       <td>${imgHtml}</td>
       <td>${esc(row.Name)}</td>
-      <td>${esc(row.Type ? (t('type_' + row.Type) || row.Type) : '')}</td>
-      <td>${row.Remaining ?? row.Quantity ?? 0} / ${row.Quantity ?? 0}</td>
-      <td>${esc(row.Location)}</td>
+      <td>${typeName}</td>
+      <td>${row.Remaining ?? 0} / ${row.Quantity ?? 0}</td>
+      <td>${esc(row.Location || '—')}</td>
+      <td class="small">${row.ExpiryDate || '—'}</td>
       <td><span class="tag ${statusClass}">${statusLabel}</span></td>
       <td>
-        <button class="btn btn-sm btn-outline-secondary me-1 eq-edit-btn" data-idx="${i}"><i class="bi bi-pencil"></i></button>
-        ${currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger eq-del-btn" data-idx="${i}"><i class="bi bi-trash3"></i></button>` : ''}
+        <button class="btn btn-sm btn-outline-secondary me-1 eq-edit-btn" data-idx="${i}" title="แก้ไข"><i class="bi bi-pencil"></i></button>
+        ${currentUser.role === 'Admin' ? `<button class="btn btn-sm btn-outline-danger eq-del-btn" data-idx="${i}" title="ลบ"><i class="bi bi-trash3"></i></button>` : ''}
       </td>`;
     tbody.appendChild(tr);
 
-    // Generate QR code miniature
+    // QR mini — generate after element is in DOM
     setTimeout(() => {
-      const canvas = document.getElementById('qrMini_' + i);
-      if (canvas && window.QRCode) {
-        QRCode.toCanvas(canvas, row.ID, { width: 40, margin: 0 }, err => {});
-      }
+      const cnv = document.getElementById('qrMini_' + i);
+      if (cnv && window.QRCode) QRCode.toCanvas(cnv, row.ID || 'N/A', { width: 40, margin: 0 }, () => {});
     }, 0);
 
-    // Row click → detail modal (not on action buttons)
-    tr.addEventListener('click', e => {
-      if (e.target.closest('button')) return;
-      openDetailModal(row);
-    });
+    tr.addEventListener('click', e => { if (e.target.closest('button')) return; openDetailModal(row); });
     tr.querySelector('.eq-edit-btn')?.addEventListener('click', e => { e.stopPropagation(); editEquipment(i); });
     tr.querySelector('.eq-del-btn')?.addEventListener('click',  e => { e.stopPropagation(); confirmDelete(() => deleteEquipment(row._row)); });
   });
@@ -451,12 +457,12 @@ function openDetailModal(row) {
       ${row.Description ? `<div class="col-12"><strong>${t('field_description')||'รายละเอียด'}</strong><br>${esc(row.Description)}</div>` : ''}
     </div>
     <div id="detailQrArea" class="text-center mt-3"></div>`;
-  // QR in modal
+  // QR in modal — use img with dataURL for reliability
   const qrArea = document.getElementById('detailQrArea');
-  if (window.QRCode && qrArea) {
-    const canvas = document.createElement('canvas');
-    qrArea.appendChild(canvas);
-    QRCode.toCanvas(canvas, row.ID, { width: 120, margin: 1 }, err => {});
+  if (window.QRCode && qrArea && row.ID) {
+    QRCode.toDataURL(row.ID, { width: 120, margin: 1 }, (err, url) => {
+      if (!err) { const img = document.createElement('img'); img.src = url; img.style.cssText = 'width:120px;height:120px;'; qrArea.appendChild(img); }
+    });
   }
   bsModal('detailModal').show();
 }
@@ -631,25 +637,47 @@ async function submitEquipmentForm(e) {
 }
 
 function showQrModal(equipId) {
-  const canvas = document.getElementById('qrCanvas');
-  const title  = document.getElementById('qrModalTitle');
-  if (title) title.textContent = `QR Code: ${equipId}`;
-  if (canvas && window.QRCode) {
-    QRCode.toCanvas(canvas, equipId, { width: 200, margin: 2 }, err => {});
-  }
-  const dlBtn = document.getElementById('downloadQrBtn');
-  if (dlBtn) {
-    dlBtn.onclick = () => {
-      if (!canvas) return;
-      const link = document.createElement('a');
-      link.download = `QR_${equipId}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    };
-  }
-  bsModal('qrModal').show();
-  // reset form after modal is shown
-  document.getElementById('qrModal')?.addEventListener('hidden.bs.modal', resetEquipmentForm, { once: true });
+  const titleEl = document.getElementById('qrModalTitle');
+  if (titleEl) titleEl.textContent = `QR Code: ${equipId}`;
+
+  // Show modal first, then generate QR after animation completes
+  const modal = bsModal('qrModal');
+  modal.show();
+
+  document.getElementById('qrModal').addEventListener('shown.bs.modal', function generateQR() {
+    document.getElementById('qrModal').removeEventListener('shown.bs.modal', generateQR);
+
+    const container = document.getElementById('qrPreviewBox');
+    if (!container) return;
+    container.innerHTML = ''; // clear previous
+
+    if (window.QRCode) {
+      QRCode.toDataURL(equipId, { width: 220, margin: 2, color: { dark: '#1B2430', light: '#ffffff' } }, (err, url) => {
+        if (err) { container.innerHTML = `<p class="text-danger">QR Error: ${err.message}</p>`; return; }
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.cssText = 'width:220px;height:220px;border-radius:8px;';
+        img.id = 'qrGeneratedImg';
+        container.appendChild(img);
+
+        // Download button
+        const dlBtn = document.getElementById('downloadQrBtn');
+        if (dlBtn) {
+          dlBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.download = `QR_${equipId}.png`;
+            a.href = url;
+            a.click();
+          };
+        }
+      });
+    } else {
+      container.innerHTML = '<p class="text-muted">QR library not loaded</p>';
+    }
+  }, { once: true });
+
+  // Reset form when modal closes
+  document.getElementById('qrModal').addEventListener('hidden.bs.modal', resetEquipmentForm, { once: true });
 }
 
 function resetEquipmentForm() {
@@ -976,11 +1004,19 @@ async function deleteBorrow(row) {
 // ============================================================
 async function loadUsers() {
   if (currentUser.role !== 'Admin') return;
+  const tbody = document.getElementById('usersTableBody');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3"><span class="spinner-border spinner-border-sm me-2"></span>กำลังโหลด...</td></tr>`;
   try {
     const res = await Api.call('listUsers', {});
-    if (!res.success) return;
+    if (!res.success) {
+      showToast('โหลดข้อมูลผู้ใช้ไม่สำเร็จ: ' + res.message, 'danger');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${res.message}</td></tr>`;
+      return;
+    }
     renderUsers(res.data || []);
-  } catch (e) {}
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+  }
 }
 
 function renderUsers(rows) {
