@@ -426,7 +426,7 @@ function renderEquipmentTable() {
     // QR mini — generate after element is in DOM
     setTimeout(() => {
       const cnv = document.getElementById('qrMini_' + i);
-      if (cnv && window.QRCode) QRCode.toCanvas(cnv, row.ID || 'N/A', { width: 40, margin: 0 }, () => {});
+      if (cnv) makeQrCode(cnv, row.ID || 'N/A', 40);
     }, 0);
 
     tr.addEventListener('click', e => { if (e.target.closest('button')) return; openDetailModal(row); });
@@ -457,12 +457,11 @@ function openDetailModal(row) {
       ${row.Description ? `<div class="col-12"><strong>${t('field_description')||'รายละเอียด'}</strong><br>${esc(row.Description)}</div>` : ''}
     </div>
     <div id="detailQrArea" class="text-center mt-3"></div>`;
-  // QR in modal — use img with dataURL for reliability
+  // QR in detail modal
   const qrArea = document.getElementById('detailQrArea');
-  if (window.QRCode && qrArea && row.ID) {
-    QRCode.toDataURL(row.ID, { width: 120, margin: 1 }, (err, url) => {
-      if (!err) { const img = document.createElement('img'); img.src = url; img.style.cssText = 'width:120px;height:120px;'; qrArea.appendChild(img); }
-    });
+  if (qrArea && row.ID) {
+    qrArea.innerHTML = '';
+    setTimeout(() => makeQrCode(qrArea, row.ID, 120), 100);
   }
   bsModal('detailModal').show();
 }
@@ -636,47 +635,65 @@ async function submitEquipmentForm(e) {
   }
 }
 
+// ── QR helper — works with qrcodejs (new QRCode) ──────────
+function makeQrCode(container, text, size) {
+  if (typeof container === 'string') container = document.getElementById(container);
+  if (!container) return;
+  container.innerHTML = '';
+  if (window.QRCode) {
+    try {
+      new QRCode(container, {
+        text:         text,
+        width:        size,
+        height:       size,
+        colorDark:    '#1B2430',
+        colorLight:   '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (err) {
+      container.innerHTML = `<span class="text-danger small">QR Error: ${err.message}</span>`;
+    }
+  } else {
+    // Fallback: Google Charts QR API
+    const img = document.createElement('img');
+    img.src = `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(text)}&chld=M|2`;
+    img.width = size; img.height = size;
+    img.style.borderRadius = '4px';
+    container.appendChild(img);
+  }
+}
+
 function showQrModal(equipId) {
   const titleEl = document.getElementById('qrModalTitle');
   if (titleEl) titleEl.textContent = `QR Code: ${equipId}`;
 
-  // Show modal first, then generate QR after animation completes
   const modal = bsModal('qrModal');
   modal.show();
 
-  document.getElementById('qrModal').addEventListener('shown.bs.modal', function generateQR() {
-    document.getElementById('qrModal').removeEventListener('shown.bs.modal', generateQR);
+  // Generate QR after modal animation finishes
+  document.getElementById('qrModal').addEventListener('shown.bs.modal', function onShown() {
+    document.getElementById('qrModal').removeEventListener('shown.bs.modal', onShown);
+    const box = document.getElementById('qrPreviewBox');
+    if (box) makeQrCode(box, equipId, 220);
 
-    const container = document.getElementById('qrPreviewBox');
-    if (!container) return;
-    container.innerHTML = ''; // clear previous
-
-    if (window.QRCode) {
-      QRCode.toDataURL(equipId, { width: 220, margin: 2, color: { dark: '#1B2430', light: '#ffffff' } }, (err, url) => {
-        if (err) { container.innerHTML = `<p class="text-danger">QR Error: ${err.message}</p>`; return; }
-        const img = document.createElement('img');
-        img.src = url;
-        img.style.cssText = 'width:220px;height:220px;border-radius:8px;';
-        img.id = 'qrGeneratedImg';
-        container.appendChild(img);
-
-        // Download button
-        const dlBtn = document.getElementById('downloadQrBtn');
-        if (dlBtn) {
-          dlBtn.onclick = () => {
-            const a = document.createElement('a');
-            a.download = `QR_${equipId}.png`;
-            a.href = url;
-            a.click();
-          };
+    // Download button — grab the canvas/img created by qrcodejs
+    const dlBtn = document.getElementById('downloadQrBtn');
+    if (dlBtn) {
+      dlBtn.onclick = () => {
+        const canvas = document.querySelector('#qrPreviewBox canvas');
+        if (canvas) {
+          const a = document.createElement('a');
+          a.download = `QR_${equipId}.png`;
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+        } else {
+          const img = document.querySelector('#qrPreviewBox img');
+          if (img) window.open(img.src, '_blank');
         }
-      });
-    } else {
-      container.innerHTML = '<p class="text-muted">QR library not loaded</p>';
+      };
     }
-  }, { once: true });
+  });
 
-  // Reset form when modal closes
   document.getElementById('qrModal').addEventListener('hidden.bs.modal', resetEquipmentForm, { once: true });
 }
 
@@ -738,14 +755,22 @@ async function deleteEquipment(rowNum) {
 // DISPOSE PAGE
 // ============================================================
 async function loadDisposePage() {
-  await ensureEquipCache();
+  // Ensure equipment is loaded before populating dropdown
+  if (!equipCache.length) {
+    const res = await Api.call('listEquipment', {}).catch(() => null);
+    if (res?.success) equipCache = res.data || [];
+    else showToast('โหลดรายการอุปกรณ์ไม่สำเร็จ — ลอง Refresh หน้า', 'warning');
+  }
   populateEquipmentDropdown('dispType', 'dispEquipment', true);
-  // Lock disposer
+
+  // Lock disposer name to current user
   const dispByEl = document.getElementById('dispBy');
-  if (dispByEl) dispByEl.value = currentUser.fullName || currentUser.username;
-  // Default date today
+  if (dispByEl) dispByEl.value = currentUser?.fullName || currentUser?.username || '';
+
+  // Default date to today
   const dispDateEl = document.getElementById('dispDate');
   if (dispDateEl && !dispDateEl.value) dispDateEl.value = todayStr();
+
   loadDisposeHistory();
 }
 
@@ -805,30 +830,49 @@ function resetDisposeForm() {
 
 async function submitDispose(e) {
   e.preventDefault();
-  const rowVal = document.getElementById('dispRow').value;
-  const isEdit = !!rowVal;
+  const rowVal   = document.getElementById('dispRow').value;
+  const isEdit   = !!rowVal;
   const equipSel = document.getElementById('dispEquipment');
   const equipId  = equipSel?.value || '';
-  const equipName= equipSel?.selectedOptions[0]?.text || '';
-  const dispose = {
+  const qty      = parseInt(document.getElementById('dispQuantity')?.value) || 0;
+
+  // ── Validate ──
+  if (!equipId)  { showToast('กรุณาเลือกรายการอุปกรณ์', 'danger'); return; }
+  if (qty <= 0)  { showToast('กรุณากรอกจำนวนที่ต้องการจำหน่าย', 'danger'); return; }
+
+  const equip    = equipCache.find(r => r.ID === equipId);
+  const dispose  = {
     EquipmentID:   equipId,
-    EquipmentName: equipName.split(' — ')[0],
-    Type:          equipCache.find(r => r.ID === equipId)?.Type || '',
-    Quantity:      parseInt(document.getElementById('dispQuantity').value) || 0,
-    DisposeDate:   document.getElementById('dispDate').value,
-    Reason:        document.getElementById('dispReason').value,
+    EquipmentName: equip?.Name || equipSel?.selectedOptions[0]?.text?.split(' — ')[0] || '',
+    Type:          equip?.Type || '',
+    Quantity:      qty,
+    DisposeDate:   document.getElementById('dispDate')?.value || todayStr(),
+    Reason:        document.getElementById('dispReason')?.value || '',
   };
+
+  const saveBtn = e.target.querySelector('button[type="submit"]');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'กำลังบันทึก...'; }
+
   try {
     const action  = isEdit ? 'updateDispose' : 'addDispose';
     const payload = isEdit ? { row: parseInt(rowVal), dispose } : { dispose };
     const res = await Api.call(action, payload);
-    if (!res.success) { showToast(res.message, 'danger'); return; }
-    showToast(t('saved') || 'บันทึกสำเร็จ', 'success');
+
+    if (!res.success) {
+      showToast('บันทึกไม่สำเร็จ: ' + (res.message || 'เกิดข้อผิดพลาด'), 'danger');
+      return;
+    }
+    showToast('บันทึกการจำหน่ายสำเร็จ ✓', 'success');
     resetDisposeForm();
     equipCache = [];
+    await ensureEquipCache();
     loadDisposeHistory();
     populateEquipmentDropdown('dispType', 'dispEquipment', true);
-  } catch (err) { showToast(err.message, 'danger'); }
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + (err.message || 'ไม่ทราบสาเหตุ'), 'danger');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'บันทึก'; }
+  }
 }
 
 async function deleteDispose(row) {
